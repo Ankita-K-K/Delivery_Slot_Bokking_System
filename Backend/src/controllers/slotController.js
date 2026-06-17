@@ -10,14 +10,69 @@ export const createSlot = async (req, res, next) => {
       throw new Error("date, startTime, endTime and capacity are required");
     }
 
-    if (capacity < 1) {
+    const slotCapacity = Number(capacity);
+
+    if (slotCapacity < 1) {
       res.status(400);
       throw new Error("Capacity must be at least 1");
     }
 
+    if (slotCapacity > 100) {
+      res.status(400);
+      throw new Error("Capacity cannot exceed 100");
+    }
+
     if (startTime >= endTime) {
       res.status(400);
-      throw new Error("Start time must be before end time");
+      throw new Error("End time must be greater than start time");
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const slotDate = new Date(date);
+    slotDate.setHours(0, 0, 0, 0);
+
+    if (slotDate < today) {
+      res.status(400);
+      throw new Error("Cannot create slot for a past date");
+    }
+
+    const [startHour, startMinute] = startTime.split(":").map(Number);
+    const [endHour, endMinute] = endTime.split(":").map(Number);
+
+    const startTotalMinutes = startHour * 60 + startMinute;
+    const endTotalMinutes = endHour * 60 + endMinute;
+
+    const duration = endTotalMinutes - startTotalMinutes;
+
+    if (duration < 30) {
+      res.status(400);
+      throw new Error("Slot duration must be at least 30 minutes");
+    }
+
+    const now = new Date();
+
+    if (slotDate.getTime() === today.getTime()) {
+      const slotStartDateTime = new Date();
+      slotStartDateTime.setHours(startHour, startMinute, 0, 0);
+
+      if (slotStartDateTime <= now) {
+        res.status(400);
+        throw new Error("Cannot create slot for a past time");
+      }
+    }
+
+    const overlappingSlot = await Slot.findOne({
+      date,
+      isActive: true,
+      startTime: { $lt: endTime },
+      endTime: { $gt: startTime },
+    });
+
+    if (overlappingSlot) {
+      res.status(409);
+      throw new Error("Slot overlaps with an existing active slot");
     }
 
     const existingSlot = await Slot.findOne({
@@ -27,10 +82,9 @@ export const createSlot = async (req, res, next) => {
     });
 
     if (existingSlot) {
-      // Reactivate soft deleted slot
       if (!existingSlot.isActive) {
         existingSlot.isActive = true;
-        existingSlot.capacity = capacity;
+        existingSlot.capacity = slotCapacity;
 
         const reactivatedSlot = await existingSlot.save();
 
@@ -50,7 +104,7 @@ export const createSlot = async (req, res, next) => {
       date,
       startTime,
       endTime,
-      capacity,
+      capacity: slotCapacity,
     });
 
     return sendSuccess(res, 201, "Slot created successfully", slot);
@@ -58,7 +112,6 @@ export const createSlot = async (req, res, next) => {
     next(error);
   }
 };
-
 export const getAllSlots = async (req, res, next) => {
   try {
     const slots = await Slot.find().sort({ date: 1, startTime: 1 });
