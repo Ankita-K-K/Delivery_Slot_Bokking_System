@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-
+import toast from "react-hot-toast";
 import {
   createSlot,
   fetchSlots,
@@ -59,7 +59,7 @@ const CreateSlot = () => {
     const validationMessage = validateSlot();
 
     if (validationMessage) {
-      setValidationError(validationMessage);
+      toast.error(validationMessage);
       return;
     }
 
@@ -71,7 +71,7 @@ const CreateSlot = () => {
     );
 
     if (createSlot.fulfilled.match(result)) {
-      setSuccessMessage("Slot created or reactivated successfully.");
+      toast.success("Slot created successfully");
       resetForm();
       dispatch(fetchSlots());
     }
@@ -137,7 +137,7 @@ const CreateSlot = () => {
     const result = await dispatch(disableSlot(slotId));
 
     if (disableSlot.fulfilled.match(result)) {
-      setSuccessMessage("Slot disabled successfully.");
+      toast.success("Slot disabled successfully");
       dispatch(fetchSlots());
     }
   };

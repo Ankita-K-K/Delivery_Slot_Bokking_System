@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-
+import toast from "react-hot-toast";
 import {
   fetchBookings,
   cancelBooking,
@@ -39,7 +39,7 @@ const Bookings = () => {
     const result = await dispatch(cancelBooking(bookingId));
 
     if (cancelBooking.fulfilled.match(result)) {
-      setSuccessMessage("Booking cancelled successfully.");
+      toast.success("Booking cancelled successfully");
       dispatch(fetchBookings());
       dispatch(fetchSlots());
     }

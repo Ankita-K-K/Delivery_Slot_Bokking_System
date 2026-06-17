@@ -8,6 +8,7 @@ import {
 import { fetchSlots } from "../features/slots/slotSlice";
 import EmptyState from "../components/EmptyState";
 import ShimmerCard from "../components/ShimmerCard";
+import toast from "react-hot-toast";
 
 const CANCELLATION_CUTOFF_HOURS = 3;
 
@@ -47,9 +48,12 @@ const MyBookings = () => {
     const result = await dispatch(cancelBooking(bookingId));
 
     if (cancelBooking.fulfilled.match(result)) {
-      setSuccessMessage("Booking cancelled successfully.");
+      toast.success("Booking cancelled successfully");
       dispatch(fetchBookings());
       dispatch(fetchSlots());
+    }
+    if (cancelBooking.rejected.match(result)) {
+      toast.error(result.payload?.message || "Unable to cancel booking");
     }
   };
 

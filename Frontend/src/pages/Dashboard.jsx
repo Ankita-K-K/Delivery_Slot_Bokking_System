@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-
+import toast from "react-hot-toast";
 import { fetchSlots } from "../features/slots/slotSlice";
 import {
   createBooking,
@@ -51,9 +51,12 @@ const Dashboard = () => {
     const result = await dispatch(createBooking(bookingData));
 
     if (createBooking.fulfilled.match(result)) {
-      setSuccessMessage("Your delivery slot has been booked successfully.");
+      toast.success("Delivery slot booked successfully");
       setSelectedSlot(null);
       dispatch(fetchSlots());
+    }
+    if (createBooking.rejected.match(result)) {
+      toast.error(result.payload?.message || "Unable to create booking");
     }
   };
 
