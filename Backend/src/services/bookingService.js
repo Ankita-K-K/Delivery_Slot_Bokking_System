@@ -111,7 +111,7 @@ export const cancelBooking = async (bookingId) => {
     throw error;
   }
 
-  const booking = await Booking.findById(bookingId);
+  const booking = await Booking.findById(bookingId).populate("slotId");
 
   if (!booking) {
     const error = new Error("Booking not found");
@@ -125,10 +125,27 @@ export const cancelBooking = async (bookingId) => {
     throw error;
   }
 
+  const slot = booking.slotId;
+
+  const slotStartDateTime = new Date(`${slot.date}T${slot.startTime}:00`);
+  const cancellationDeadline = new Date(
+    slotStartDateTime.getTime() - 3 * 60 * 60 * 1000,
+  );
+
+  const now = new Date();
+
+  if (now > cancellationDeadline) {
+    const error = new Error(
+      "Cancellation window closed. Bookings can only be cancelled at least 3 hours before the slot start time.",
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
   booking.status = "CANCELLED";
   await booking.save();
 
-  await Slot.findByIdAndUpdate(booking.slotId, {
+  await Slot.findByIdAndUpdate(slot._id, {
     $inc: { bookedCount: -1 },
   });
 
