@@ -32,6 +32,10 @@ const Dashboard = () => {
 
   const activeSlots = slots.filter((slot) => slot.isActive);
 
+  const availableSlots = activeSlots.filter(
+    (slot) => slot.bookedCount < slot.capacity,
+  );
+
   const handleBookSlot = (slot) => {
     setSuccessMessage("");
     dispatch(clearBookingError());
@@ -72,9 +76,9 @@ const Dashboard = () => {
         </div>
 
         <div className="rounded-2xl bg-white border border-slate-200 px-5 py-4 shadow-sm">
-          <p className="text-sm text-slate-500">Active Slots</p>
+          <p className="text-sm text-slate-500">Available Slots</p>
           <p className="text-3xl font-bold text-slate-950">
-            {activeSlots.length}
+            {availableSlots.length}
           </p>
         </div>
       </div>
