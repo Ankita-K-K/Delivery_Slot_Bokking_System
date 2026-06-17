@@ -162,17 +162,26 @@ export const updateSlot = async (req, res, next) => {
     }
 
     if (capacity !== undefined) {
-      if (capacity < slot.bookedCount) {
+      const newCapacity = Number(capacity);
+
+      if (newCapacity < slot.bookedCount) {
         res.status(400);
-        throw new Error("Capacity cannot be less than already booked count");
+        throw new Error(
+          `Capacity cannot be less than booked count (${slot.bookedCount})`,
+        );
       }
 
-      if (capacity < 1) {
+      if (newCapacity < 1) {
         res.status(400);
         throw new Error("Capacity must be at least 1");
       }
 
-      slot.capacity = capacity;
+      if (newCapacity > 100) {
+        res.status(400);
+        throw new Error("Capacity cannot exceed 100");
+      }
+
+      slot.capacity = newCapacity;
     }
 
     if (isActive !== undefined) {

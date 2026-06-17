@@ -5,6 +5,7 @@ import {
   createSlot,
   fetchSlots,
   disableSlot,
+  updateSlot,
   clearSlotError,
 } from "../features/slots/slotSlice";
 
@@ -21,6 +22,15 @@ const CreateSlot = () => {
   const [validationError, setValidationError] = useState("");
 
   const [formData, setFormData] = useState({
+    date: "",
+    startTime: "",
+    endTime: "",
+    capacity: "",
+  });
+
+  const [editingSlot, setEditingSlot] = useState(null);
+
+  const [editFormData, setEditFormData] = useState({
     date: "",
     startTime: "",
     endTime: "",
@@ -139,6 +149,145 @@ const CreateSlot = () => {
     if (disableSlot.fulfilled.match(result)) {
       toast.success("Slot disabled successfully");
       dispatch(fetchSlots());
+    }
+  };
+
+  const handleEditChange = (e) => {
+    setEditFormData((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
+  };
+
+  const openEditModal = (slot) => {
+    if (!slot.isActive) {
+      toast.error("Disabled slots cannot be edited");
+      return;
+    }
+
+    setEditingSlot(slot);
+
+    setEditFormData({
+      date: slot.date,
+      startTime: slot.startTime,
+      endTime: slot.endTime,
+      capacity: slot.capacity,
+    });
+  };
+
+  const closeEditModal = () => {
+    setEditingSlot(null);
+
+    setEditFormData({
+      date: "",
+      startTime: "",
+      endTime: "",
+      capacity: "",
+    });
+  };
+
+  const validateEditSlot = () => {
+    if (
+      !editFormData.date ||
+      !editFormData.startTime ||
+      !editFormData.endTime ||
+      !editFormData.capacity
+    ) {
+      return "All fields are required";
+    }
+
+    const capacityValue = Number(editFormData.capacity);
+
+    if (capacityValue < editingSlot.bookedCount) {
+      return `Capacity cannot be less than booked count (${editingSlot.bookedCount})`;
+    }
+
+    if (capacityValue < 1) {
+      return "Capacity must be at least 1";
+    }
+
+    if (capacityValue > 100) {
+      return "Capacity cannot exceed 100";
+    }
+
+    const isDateTimeChanged =
+      editFormData.date !== editingSlot.date ||
+      editFormData.startTime !== editingSlot.startTime ||
+      editFormData.endTime !== editingSlot.endTime;
+
+    if (isDateTimeChanged && editingSlot.bookedCount > 0) {
+      return "Date or time cannot be changed because this slot already has bookings";
+    }
+
+    if (editFormData.startTime >= editFormData.endTime) {
+      return "End time must be greater than start time";
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const selectedDate = new Date(editFormData.date);
+    selectedDate.setHours(0, 0, 0, 0);
+
+    if (selectedDate < today) {
+      return "Cannot update slot to a past date";
+    }
+
+    const [startHour, startMinute] = editFormData.startTime
+      .split(":")
+      .map(Number);
+
+    const [endHour, endMinute] = editFormData.endTime.split(":").map(Number);
+
+    const startTotalMinutes = startHour * 60 + startMinute;
+    const endTotalMinutes = endHour * 60 + endMinute;
+
+    if (endTotalMinutes - startTotalMinutes < 30) {
+      return "Slot duration must be at least 30 minutes";
+    }
+
+    const now = new Date();
+
+    if (selectedDate.getTime() === today.getTime()) {
+      const selectedStartDateTime = new Date();
+      selectedStartDateTime.setHours(startHour, startMinute, 0, 0);
+
+      if (selectedStartDateTime <= now) {
+        return "Cannot update slot to a past time";
+      }
+    }
+
+    return null;
+  };
+
+  const handleUpdateSlot = async () => {
+    const validationMessage = validateEditSlot();
+
+    if (validationMessage) {
+      toast.error(validationMessage);
+      return;
+    }
+
+    const result = await dispatch(
+      updateSlot({
+        slotId: editingSlot._id,
+        slotData: {
+          date: editFormData.date,
+          startTime: editFormData.startTime,
+          endTime: editFormData.endTime,
+          capacity: Number(editFormData.capacity),
+        },
+      }),
+    );
+
+    if (updateSlot.fulfilled.match(result)) {
+      toast.success("Slot updated successfully");
+      closeEditModal();
+      dispatch(fetchSlots());
+    }
+
+    if (updateSlot.rejected.match(result)) {
+      toast.error(result.payload || "Failed to update slot");
     }
   };
 
@@ -318,17 +467,31 @@ const CreateSlot = () => {
                         </p>
                       </div>
 
-                      <button
-                        onClick={() => handleDisableSlot(slot._id)}
-                        disabled={!slot.isActive || actionLoading}
-                        className={`rounded-xl px-5 py-3 text-sm font-semibold transition ${
-                          slot.isActive
-                            ? "bg-red-600 text-white hover:bg-red-700"
-                            : "bg-slate-200 text-slate-500 cursor-not-allowed"
-                        }`}
-                      >
-                        {slot.isActive ? "Disable Slot" : "Disabled"}
-                      </button>
+                      <div className="flex flex-col gap-3 sm:flex-row">
+                        <button
+                          onClick={() => openEditModal(slot)}
+                          disabled={!slot.isActive}
+                          className={`rounded-xl px-5 py-3 text-sm font-semibold transition ${
+                            slot.isActive
+                              ? "border border-slate-200 text-slate-700 hover:bg-slate-50"
+                              : "bg-slate-200 text-slate-500 cursor-not-allowed"
+                          }`}
+                        >
+                          Edit Slot
+                        </button>
+
+                        <button
+                          onClick={() => handleDisableSlot(slot._id)}
+                          disabled={!slot.isActive || actionLoading}
+                          className={`rounded-xl px-5 py-3 text-sm font-semibold transition ${
+                            slot.isActive
+                              ? "bg-red-600 text-white hover:bg-red-700"
+                              : "bg-slate-200 text-slate-500 cursor-not-allowed"
+                          }`}
+                        >
+                          {slot.isActive ? "Disable Slot" : "Disabled"}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -337,6 +500,122 @@ const CreateSlot = () => {
           )}
         </div>
       </div>
+      {editingSlot && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/40 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-blue-600">
+                  Edit Delivery Slot
+                </p>
+
+                <h3 className="mt-1 text-2xl font-bold text-slate-950">
+                  {editingSlot.date}
+                </h3>
+
+                {editingSlot.bookedCount > 0 && (
+                  <p className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                    This slot has bookings. Only capacity can be updated.
+                  </p>
+                )}
+              </div>
+
+              <button
+                onClick={closeEditModal}
+                className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-600 hover:bg-slate-200"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="mt-6 space-y-4">
+              <div>
+                <label className="text-sm font-medium text-slate-700">
+                  Date
+                </label>
+                <input
+                  type="date"
+                  name="date"
+                  min={new Date().toISOString().split("T")[0]}
+                  value={editFormData.date}
+                  onChange={handleEditChange}
+                  disabled={editingSlot.bookedCount > 0}
+                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none disabled:bg-slate-100 disabled:text-slate-500 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="text-sm font-medium text-slate-700">
+                    Start Time
+                  </label>
+                  <input
+                    type="time"
+                    step="1800"
+                    name="startTime"
+                    value={editFormData.startTime}
+                    onChange={handleEditChange}
+                    disabled={editingSlot.bookedCount > 0}
+                    className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none disabled:bg-slate-100 disabled:text-slate-500 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-slate-700">
+                    End Time
+                  </label>
+                  <input
+                    type="time"
+                    step="1800"
+                    name="endTime"
+                    value={editFormData.endTime}
+                    onChange={handleEditChange}
+                    disabled={editingSlot.bookedCount > 0}
+                    className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none disabled:bg-slate-100 disabled:text-slate-500 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-slate-700">
+                  Capacity
+                </label>
+                <input
+                  type="number"
+                  name="capacity"
+                  min={editingSlot.bookedCount}
+                  max="100"
+                  value={editFormData.capacity}
+                  onChange={handleEditChange}
+                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                />
+
+                <p className="mt-2 text-xs text-slate-500">
+                  Current booked count: {editingSlot.bookedCount}. Capacity
+                  cannot be less than this value.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                onClick={closeEditModal}
+                className="rounded-xl border border-slate-200 px-5 py-3 font-medium text-slate-700 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleUpdateSlot}
+                disabled={actionLoading}
+                className="rounded-xl bg-blue-600 px-5 py-3 font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+              >
+                {actionLoading ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 };
