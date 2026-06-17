@@ -43,14 +43,13 @@ const SlotCard = ({ slot, onBook }) => {
 
       <button
         onClick={() => onBook(slot)}
-        disabled={!isAvailable}
-        className={`mt-6 w-full py-2.5 rounded-lg font-medium transition ${
+        className={`mt-6 w-full rounded-lg py-2.5 font-medium transition ${
           isAvailable
             ? "bg-blue-600 text-white hover:bg-blue-700"
-            : "bg-gray-200 text-gray-500 cursor-not-allowed"
+            : "bg-slate-900 text-white hover:bg-slate-800"
         }`}
       >
-        {isAvailable ? "Book Slot" : "Slot Full"}
+        {isAvailable ? "Book Slot" : "Find Next Available Slot"}
       </button>
     </div>
   );

@@ -57,6 +57,11 @@ const Dashboard = () => {
     }
   };
 
+  const handleUseSuggestedSlot = (slot) => {
+    dispatch(clearBookingError());
+    setSelectedSlot(slot);
+  };
+
   return (
     <section>
       <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -132,6 +137,7 @@ const Dashboard = () => {
           actionLoading={actionLoading}
           error={bookingError}
           suggestedSlot={suggestedSlot}
+          onUseSuggestedSlot={handleUseSuggestedSlot}
         />
       )}
     </section>

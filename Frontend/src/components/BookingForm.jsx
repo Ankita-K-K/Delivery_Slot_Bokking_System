@@ -7,6 +7,7 @@ const BookingForm = ({
   actionLoading,
   error,
   suggestedSlot,
+  onUseSuggestedSlot,
 }) => {
   const [formData, setFormData] = useState({
     customerName: "",
@@ -57,14 +58,23 @@ const BookingForm = ({
             <p className="font-medium">{error}</p>
 
             {suggestedSlot && (
-              <div className="mt-3 rounded-xl bg-white p-3">
+              <div className="mt-3 rounded-xl bg-white p-4">
                 <p className="text-xs font-semibold uppercase text-slate-500">
-                  Suggested next slot
+                  Suggested Next Available Slot
                 </p>
-                <p className="mt-1 font-semibold text-slate-900">
+
+                <p className="mt-2 font-semibold text-slate-900">
                   {suggestedSlot.date} | {suggestedSlot.startTime} -{" "}
                   {suggestedSlot.endTime}
                 </p>
+
+                <button
+                  type="button"
+                  onClick={() => onUseSuggestedSlot(suggestedSlot)}
+                  className="mt-4 w-full rounded-xl bg-blue-600 px-4 py-3 font-medium text-white hover:bg-blue-700 transition"
+                >
+                  Book Suggested Slot
+                </button>
               </div>
             )}
           </div>
