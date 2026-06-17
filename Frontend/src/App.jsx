@@ -14,6 +14,11 @@ function App() {
           <Route index element={<Dashboard />} />
         </Route>
 
+        <Route path="/" element={<UserLayout />}>
+          <Route index element={<Dashboard />} />
+          <Route path="my-bookings" element={<MyBookings />} />
+        </Route>
+
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboard />} />
           <Route path="slots" element={<CreateSlot />} />

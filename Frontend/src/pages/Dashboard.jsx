@@ -4,6 +4,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchSlots } from "../features/slots/slotSlice";
 import {
   createBooking,
+  fetchBookings,
+  cancelBooking,
   clearBookingError,
 } from "../features/bookings/bookingSlice";
 
@@ -12,12 +14,27 @@ import ShimmerCard from "../components/ShimmerCard";
 import EmptyState from "../components/EmptyState";
 import BookingForm from "../components/BookingForm";
 
+const CANCELLATION_CUTOFF_HOURS = 3;
+
+const canCancelBooking = (booking) => {
+  if (!booking?.slotId || booking.status === "CANCELLED") return false;
+
+  const slot = booking.slotId;
+  const slotStartDateTime = new Date(`${slot.date}T${slot.startTime}:00`);
+  const cancellationDeadline = new Date(
+    slotStartDateTime.getTime() - CANCELLATION_CUTOFF_HOURS * 60 * 60 * 1000,
+  );
+
+  return new Date() <= cancellationDeadline;
+};
+
 const Dashboard = () => {
   const dispatch = useDispatch();
 
   const { slots, loading, error } = useSelector((state) => state.slots);
 
   const {
+    bookings,
     actionLoading,
     error: bookingError,
     suggestedSlot,
@@ -28,9 +45,13 @@ const Dashboard = () => {
 
   useEffect(() => {
     dispatch(fetchSlots());
+    dispatch(fetchBookings());
   }, [dispatch]);
 
   const activeSlots = slots.filter((slot) => slot.isActive);
+  const confirmedBookings = bookings.filter(
+    (booking) => booking.status === "CONFIRMED",
+  );
 
   const handleBookSlot = (slot) => {
     setSuccessMessage("");
@@ -50,6 +71,17 @@ const Dashboard = () => {
       setSuccessMessage("Your delivery slot has been booked successfully.");
       setSelectedSlot(null);
       dispatch(fetchSlots());
+      dispatch(fetchBookings());
+    }
+  };
+
+  const handleCancelBooking = async (bookingId) => {
+    const result = await dispatch(cancelBooking(bookingId));
+
+    if (cancelBooking.fulfilled.match(result)) {
+      setSuccessMessage("Booking cancelled successfully.");
+      dispatch(fetchSlots());
+      dispatch(fetchBookings());
     }
   };
 
@@ -67,7 +99,7 @@ const Dashboard = () => {
 
           <p className="mt-3 max-w-2xl text-slate-600">
             Choose a convenient delivery slot and complete your booking.
-            Availability updates instantly after successful bookings.
+            Cancellation is allowed up to 3 hours before the slot start time.
           </p>
         </div>
 
@@ -82,6 +114,12 @@ const Dashboard = () => {
       {successMessage && (
         <div className="mb-6 rounded-2xl border border-green-200 bg-green-50 p-4 text-green-700">
           {successMessage}
+        </div>
+      )}
+
+      {bookingError && !selectedSlot && (
+        <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700">
+          {bookingError}
         </div>
       )}
 
@@ -113,6 +151,68 @@ const Dashboard = () => {
           ))}
         </div>
       )}
+
+      <div className="mt-12">
+        <h3 className="text-2xl font-bold text-slate-950">Your Bookings</h3>
+        <p className="mt-2 text-slate-600">
+          Confirmed bookings can be cancelled before the cancellation cutoff.
+        </p>
+
+        {confirmedBookings.length === 0 ? (
+          <div className="mt-5">
+            <EmptyState
+              title="No confirmed bookings"
+              description="Your active bookings will appear here after booking a slot."
+            />
+          </div>
+        ) : (
+          <div className="mt-5 grid gap-4">
+            {confirmedBookings.map((booking) => {
+              const slot = booking.slotId;
+              const isCancelable = canCancelBooking(booking);
+
+              return (
+                <div
+                  key={booking._id}
+                  className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+                >
+                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-slate-500">
+                        {booking.customerName}
+                      </p>
+
+                      <h4 className="mt-1 text-lg font-bold text-slate-950">
+                        {slot?.date} | {slot?.startTime} - {slot?.endTime}
+                      </h4>
+
+                      <p className="mt-1 text-sm text-slate-500">
+                        {booking.address}
+                      </p>
+
+                      <p className="mt-2 text-xs text-slate-500">
+                        Cancellation allowed until 3 hours before slot start.
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => handleCancelBooking(booking._id)}
+                      disabled={!isCancelable || actionLoading}
+                      className={`rounded-xl px-5 py-3 text-sm font-semibold transition ${
+                        isCancelable
+                          ? "bg-red-600 text-white hover:bg-red-700"
+                          : "bg-slate-200 text-slate-500 cursor-not-allowed"
+                      }`}
+                    >
+                      {isCancelable ? "Cancel Booking" : "Cancellation Closed"}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {selectedSlot && (
         <BookingForm
