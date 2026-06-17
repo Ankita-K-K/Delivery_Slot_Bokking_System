@@ -1,7 +1,9 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import UserLayout from "./layouts/UserLayout";
 import AdminLayout from "./layouts/AdminLayout";
+
 import Dashboard from "./pages/Dashboard";
+import MyBookings from "./pages/MyBookings";
 import AdminDashboard from "./pages/AdminDashboard";
 import CreateSlot from "./pages/CreateSlot";
 import Bookings from "./pages/Bookings";
@@ -10,10 +12,6 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<UserLayout />}>
-          <Route index element={<Dashboard />} />
-        </Route>
-
         <Route path="/" element={<UserLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="my-bookings" element={<MyBookings />} />

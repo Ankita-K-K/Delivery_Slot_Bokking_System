@@ -152,68 +152,6 @@ const Dashboard = () => {
         </div>
       )}
 
-      <div className="mt-12">
-        <h3 className="text-2xl font-bold text-slate-950">Your Bookings</h3>
-        <p className="mt-2 text-slate-600">
-          Confirmed bookings can be cancelled before the cancellation cutoff.
-        </p>
-
-        {confirmedBookings.length === 0 ? (
-          <div className="mt-5">
-            <EmptyState
-              title="No confirmed bookings"
-              description="Your active bookings will appear here after booking a slot."
-            />
-          </div>
-        ) : (
-          <div className="mt-5 grid gap-4">
-            {confirmedBookings.map((booking) => {
-              const slot = booking.slotId;
-              const isCancelable = canCancelBooking(booking);
-
-              return (
-                <div
-                  key={booking._id}
-                  className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-                >
-                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-slate-500">
-                        {booking.customerName}
-                      </p>
-
-                      <h4 className="mt-1 text-lg font-bold text-slate-950">
-                        {slot?.date} | {slot?.startTime} - {slot?.endTime}
-                      </h4>
-
-                      <p className="mt-1 text-sm text-slate-500">
-                        {booking.address}
-                      </p>
-
-                      <p className="mt-2 text-xs text-slate-500">
-                        Cancellation allowed until 3 hours before slot start.
-                      </p>
-                    </div>
-
-                    <button
-                      onClick={() => handleCancelBooking(booking._id)}
-                      disabled={!isCancelable || actionLoading}
-                      className={`rounded-xl px-5 py-3 text-sm font-semibold transition ${
-                        isCancelable
-                          ? "bg-red-600 text-white hover:bg-red-700"
-                          : "bg-slate-200 text-slate-500 cursor-not-allowed"
-                      }`}
-                    >
-                      {isCancelable ? "Cancel Booking" : "Cancellation Closed"}
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
       {selectedSlot && (
         <BookingForm
           slot={selectedSlot}
