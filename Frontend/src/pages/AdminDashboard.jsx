@@ -64,14 +64,22 @@ const AdminDashboard = () => {
           (a, b) => b.bookedCount / b.capacity - a.bookedCount / a.capacity,
         )[0];
 
+  const now = new Date();
+
   const nextAvailableSlot =
     activeSlots
-      .filter((slot) => slot.bookedCount < slot.capacity)
+      .filter((slot) => {
+        if (slot.bookedCount >= slot.capacity) return false;
+
+        const slotStart = new Date(`${slot.date}T${slot.startTime}:00`);
+
+        return slotStart > now;
+      })
       .sort((a, b) => {
-        if (a.date === b.date) {
-          return a.startTime.localeCompare(b.startTime);
-        }
-        return a.date.localeCompare(b.date);
+        const dateA = new Date(`${a.date}T${a.startTime}:00`);
+        const dateB = new Date(`${b.date}T${b.startTime}:00`);
+
+        return dateA - dateB;
       })[0] || null;
   const stats = [
     {
