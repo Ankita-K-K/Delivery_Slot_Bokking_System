@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import slotRoutes from "./routes/slotRoutes.js";
 import { notFound, errorHandler } from "./middlewares/errorMiddleware.js";
 
 const app = express();
@@ -14,7 +15,7 @@ app.get("/", (req, res) => {
   });
 });
 
-// Routes will be added here later
+app.use("/api/slots", slotRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
