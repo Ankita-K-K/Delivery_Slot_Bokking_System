@@ -1,15 +1,30 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+
 import { fetchSlots } from "../features/slots/slotSlice";
+import {
+  createBooking,
+  clearBookingError,
+} from "../features/bookings/bookingSlice";
+
 import SlotCard from "../components/SlotCard";
 import ShimmerCard from "../components/ShimmerCard";
 import EmptyState from "../components/EmptyState";
+import BookingForm from "../components/BookingForm";
 
 const Dashboard = () => {
   const dispatch = useDispatch();
+
   const { slots, loading, error } = useSelector((state) => state.slots);
 
+  const {
+    actionLoading,
+    error: bookingError,
+    suggestedSlot,
+  } = useSelector((state) => state.bookings);
+
   const [selectedSlot, setSelectedSlot] = useState(null);
+  const [successMessage, setSuccessMessage] = useState("");
 
   useEffect(() => {
     dispatch(fetchSlots());
@@ -18,8 +33,24 @@ const Dashboard = () => {
   const activeSlots = slots.filter((slot) => slot.isActive);
 
   const handleBookSlot = (slot) => {
+    setSuccessMessage("");
+    dispatch(clearBookingError());
     setSelectedSlot(slot);
-    console.log("Selected slot:", slot);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedSlot(null);
+    dispatch(clearBookingError());
+  };
+
+  const handleSubmitBooking = async (bookingData) => {
+    const result = await dispatch(createBooking(bookingData));
+
+    if (createBooking.fulfilled.match(result)) {
+      setSuccessMessage("Your delivery slot has been booked successfully.");
+      setSelectedSlot(null);
+      dispatch(fetchSlots());
+    }
   };
 
   return (
@@ -36,7 +67,7 @@ const Dashboard = () => {
 
           <p className="mt-3 max-w-2xl text-slate-600">
             Choose a convenient delivery slot and complete your booking.
-            Availability updates based on current slot capacity.
+            Availability updates instantly after successful bookings.
           </p>
         </div>
 
@@ -47,6 +78,12 @@ const Dashboard = () => {
           </p>
         </div>
       </div>
+
+      {successMessage && (
+        <div className="mb-6 rounded-2xl border border-green-200 bg-green-50 p-4 text-green-700">
+          {successMessage}
+        </div>
+      )}
 
       {loading && (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -65,7 +102,7 @@ const Dashboard = () => {
       {!loading && !error && activeSlots.length === 0 && (
         <EmptyState
           title="No active delivery slots"
-          description="Please check again later. Currently, there are no available delivery slots."
+          description="Please check again later. Currently, there are no active delivery slots."
         />
       )}
 
@@ -78,16 +115,14 @@ const Dashboard = () => {
       )}
 
       {selectedSlot && (
-        <div className="mt-8 rounded-2xl border border-blue-200 bg-blue-50 p-5">
-          <p className="font-semibold text-blue-900">Selected Slot</p>
-          <p className="mt-1 text-blue-700">
-            {selectedSlot.date} | {selectedSlot.startTime} -{" "}
-            {selectedSlot.endTime}
-          </p>
-          <p className="mt-2 text-sm text-blue-600">
-            Booking form will be connected in the next step.
-          </p>
-        </div>
+        <BookingForm
+          slot={selectedSlot}
+          onClose={handleCloseModal}
+          onSubmit={handleSubmitBooking}
+          actionLoading={actionLoading}
+          error={bookingError}
+          suggestedSlot={suggestedSlot}
+        />
       )}
     </section>
   );
