@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-
+import { Link } from "react-router-dom";
 import { fetchSlots } from "../features/slots/slotSlice";
 import { fetchBookings } from "../features/bookings/bookingSlice";
 import ShimmerCard from "../components/ShimmerCard";
@@ -177,20 +177,117 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h3 className="text-xl font-bold text-slate-950">System Notes</h3>
+            <div className="mt-8 grid gap-6 lg:grid-cols-2">
+              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h3 className="text-xl font-bold text-slate-950">
+                  Capacity Overview
+                </h3>
 
-              <ul className="mt-5 space-y-3 text-sm text-slate-600">
-                <li>
-                  • Overbooking is prevented using atomic MongoDB updates.
-                </li>
-                <li>
-                  • Full slots automatically suggest the next available slot.
-                </li>
-                <li>• Cancelled bookings release slot capacity.</li>
-                <li>• Slots are soft-deleted and can be reactivated.</li>
-                <li>• Cancellation is blocked within 3 hours of slot start.</li>
-              </ul>
+                <div className="mt-5">
+                  <div className="mb-2 flex justify-between text-sm text-slate-600">
+                    <span>Capacity Used</span>
+                    <span>
+                      {totalBooked} / {totalCapacity}
+                    </span>
+                  </div>
+
+                  <div className="h-4 overflow-hidden rounded-full bg-slate-100">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all"
+                      style={{
+                        width:
+                          totalCapacity === 0
+                            ? "0%"
+                            : `${(totalBooked / totalCapacity) * 100}%`,
+                      }}
+                    ></div>
+                  </div>
+
+                  <p className="mt-4 text-sm text-slate-500">
+                    {totalCapacity === 0
+                      ? "No active capacity available yet."
+                      : `${Math.round(
+                          (totalBooked / totalCapacity) * 100,
+                        )}% of available delivery capacity is currently booked.`}
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h3 className="text-xl font-bold text-slate-950">
+                  Quick Actions
+                </h3>
+
+                <div className="mt-5 grid gap-3">
+                  <Link
+                    to="/admin/slots"
+                    className="rounded-2xl bg-slate-900 px-5 py-4 text-center font-semibold text-white hover:bg-slate-800 transition"
+                  >
+                    Create New Slot
+                  </Link>
+
+                  <Link
+                    to="/admin/bookings"
+                    className="rounded-2xl border border-slate-200 px-5 py-4 text-center font-semibold text-slate-700 hover:bg-slate-50 transition"
+                  >
+                    View All Bookings
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+              <h3 className="text-xl font-bold text-slate-950">
+                Slots Near Capacity
+              </h3>
+
+              <div className="mt-5 grid gap-4 md:grid-cols-2">
+                {activeSlots
+                  .filter((slot) => slot.capacity > 0)
+                  .sort(
+                    (a, b) =>
+                      b.bookedCount / b.capacity - a.bookedCount / a.capacity,
+                  )
+                  .slice(0, 4)
+                  .map((slot) => {
+                    const usage = Math.round(
+                      (slot.bookedCount / slot.capacity) * 100,
+                    );
+
+                    return (
+                      <div
+                        key={slot._id}
+                        className="rounded-2xl border border-slate-200 p-4"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-semibold text-slate-950">
+                              {slot.date}
+                            </p>
+                            <p className="text-sm text-slate-500">
+                              {slot.startTime} - {slot.endTime}
+                            </p>
+                          </div>
+
+                          <span className="rounded-full bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-700">
+                            {usage}%
+                          </span>
+                        </div>
+
+                        <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
+                          <div
+                            className="h-full rounded-full bg-blue-600"
+                            style={{ width: `${usage}%` }}
+                          ></div>
+                        </div>
+
+                        <p className="mt-2 text-sm text-slate-500">
+                          {slot.bookedCount} of {slot.capacity} booked
+                        </p>
+                      </div>
+                    );
+                  })}
+              </div>
             </div>
           </div>
         </>
