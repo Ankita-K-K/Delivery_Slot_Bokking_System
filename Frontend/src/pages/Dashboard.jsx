@@ -4,8 +4,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchSlots } from "../features/slots/slotSlice";
 import {
   createBooking,
-  fetchBookings,
-  cancelBooking,
   clearBookingError,
 } from "../features/bookings/bookingSlice";
 
@@ -14,27 +12,12 @@ import ShimmerCard from "../components/ShimmerCard";
 import EmptyState from "../components/EmptyState";
 import BookingForm from "../components/BookingForm";
 
-const CANCELLATION_CUTOFF_HOURS = 3;
-
-const canCancelBooking = (booking) => {
-  if (!booking?.slotId || booking.status === "CANCELLED") return false;
-
-  const slot = booking.slotId;
-  const slotStartDateTime = new Date(`${slot.date}T${slot.startTime}:00`);
-  const cancellationDeadline = new Date(
-    slotStartDateTime.getTime() - CANCELLATION_CUTOFF_HOURS * 60 * 60 * 1000,
-  );
-
-  return new Date() <= cancellationDeadline;
-};
-
 const Dashboard = () => {
   const dispatch = useDispatch();
 
   const { slots, loading, error } = useSelector((state) => state.slots);
 
   const {
-    bookings,
     actionLoading,
     error: bookingError,
     suggestedSlot,
@@ -45,13 +28,9 @@ const Dashboard = () => {
 
   useEffect(() => {
     dispatch(fetchSlots());
-    dispatch(fetchBookings());
   }, [dispatch]);
 
   const activeSlots = slots.filter((slot) => slot.isActive);
-  const confirmedBookings = bookings.filter(
-    (booking) => booking.status === "CONFIRMED",
-  );
 
   const handleBookSlot = (slot) => {
     setSuccessMessage("");
@@ -71,17 +50,6 @@ const Dashboard = () => {
       setSuccessMessage("Your delivery slot has been booked successfully.");
       setSelectedSlot(null);
       dispatch(fetchSlots());
-      dispatch(fetchBookings());
-    }
-  };
-
-  const handleCancelBooking = async (bookingId) => {
-    const result = await dispatch(cancelBooking(bookingId));
-
-    if (cancelBooking.fulfilled.match(result)) {
-      setSuccessMessage("Booking cancelled successfully.");
-      dispatch(fetchSlots());
-      dispatch(fetchBookings());
     }
   };
 
