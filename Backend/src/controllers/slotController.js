@@ -20,6 +20,32 @@ export const createSlot = async (req, res, next) => {
       throw new Error("Start time must be before end time");
     }
 
+    const existingSlot = await Slot.findOne({
+      date,
+      startTime,
+      endTime,
+    });
+
+    if (existingSlot) {
+      // Reactivate soft deleted slot
+      if (!existingSlot.isActive) {
+        existingSlot.isActive = true;
+        existingSlot.capacity = capacity;
+
+        const reactivatedSlot = await existingSlot.save();
+
+        return sendSuccess(
+          res,
+          200,
+          "Slot reactivated successfully",
+          reactivatedSlot,
+        );
+      }
+
+      res.status(409);
+      throw new Error("Slot already exists for this date and time");
+    }
+
     const slot = await Slot.create({
       date,
       startTime,
@@ -29,10 +55,6 @@ export const createSlot = async (req, res, next) => {
 
     return sendSuccess(res, 201, "Slot created successfully", slot);
   } catch (error) {
-    if (error.code === 11000) {
-      res.status(409);
-      error.message = "Slot already exists for this date and time";
-    }
     next(error);
   }
 };
