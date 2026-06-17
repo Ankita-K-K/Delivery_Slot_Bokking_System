@@ -174,6 +174,12 @@ const CreateSlot = () => {
         </div>
       )}
 
+      {validationError && (
+        <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700">
+          {validationError}
+        </div>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
         <form
           onSubmit={handleSubmit}
