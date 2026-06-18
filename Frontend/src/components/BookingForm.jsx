@@ -1,4 +1,5 @@
 import { useState } from "react";
+import toast from "react-hot-toast";
 const BookingForm = ({
   slot,
   onClose,
@@ -20,6 +21,17 @@ const BookingForm = ({
   const handleChange = (e) => {
     const { name, value } = e.target;
 
+    if (name === "phone") {
+      const numericValue = value.replace(/\D/g, "").slice(0, 10);
+
+      setFormData((prev) => ({
+        ...prev,
+        phone: numericValue,
+      }));
+
+      return;
+    }
+
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -31,6 +43,13 @@ const BookingForm = ({
   };
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    const phoneRegex = /^[6-9]\d{9}$/;
+
+    if (!phoneRegex.test(formData.phone)) {
+      toast.error("Please enter a valid 10-digit mobile number");
+      return;
+    }
 
     onSubmit({
       ...formData,
@@ -113,7 +132,9 @@ const BookingForm = ({
               value={formData.phone}
               onChange={handleChange}
               required
-              placeholder="Enter phone number"
+              maxLength={10}
+              pattern="[6-9][0-9]{9}"
+              placeholder="Enter 10-digit mobile number"
               className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
             />
           </div>
