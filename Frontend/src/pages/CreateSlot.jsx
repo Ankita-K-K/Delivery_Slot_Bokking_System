@@ -482,15 +482,52 @@ const CreateSlot = () => {
 
                         <button
                           onClick={() => handleDisableSlot(slot._id)}
-                          disabled={!slot.isActive || actionLoading}
+                          disabled={
+                            !slot.isActive ||
+                            slot.bookedCount > 0 ||
+                            actionLoading
+                          }
                           className={`rounded-xl px-5 py-3 text-sm font-semibold transition ${
-                            slot.isActive
-                              ? "bg-red-600 text-white hover:bg-red-700"
-                              : "bg-slate-200 text-slate-500 cursor-not-allowed"
+                            slot.bookedCount > 0
+                              ? "cursor-not-allowed bg-amber-100 text-amber-700"
+                              : slot.isActive
+                                ? "bg-red-600 text-white hover:bg-red-700"
+                                : "bg-slate-200 text-slate-500"
                           }`}
                         >
-                          {slot.isActive ? "Disable Slot" : "Disabled"}
+                          {slot.bookedCount > 0
+                            ? "Has Bookings"
+                            : slot.isActive
+                              ? "Disable Slot"
+                              : "Disabled"}
                         </button>
+                        {!slot.isActive && (
+                          <button
+                            onClick={() =>
+                              dispatch(
+                                updateSlot({
+                                  slotId: slot._id,
+                                  slotData: { isActive: true },
+                                }),
+                              ).then((result) => {
+                                if (updateSlot.fulfilled.match(result)) {
+                                  toast.success(
+                                    "Slot reactivated successfully",
+                                  );
+                                  dispatch(fetchSlots());
+                                } else {
+                                  toast.error(
+                                    result.payload ||
+                                      "Failed to reactivate slot",
+                                  );
+                                }
+                              })
+                            }
+                            className="rounded-xl bg-green-600 px-5 py-3 text-sm font-semibold text-white hover:bg-green-700"
+                          >
+                            Reactivate Slot
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

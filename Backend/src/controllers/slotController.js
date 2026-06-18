@@ -205,6 +205,11 @@ export const deleteSlot = async (req, res, next) => {
       throw new Error("Slot not found");
     }
 
+    if (slot.bookedCount > 0) {
+      res.status(400);
+      throw new Error("Cannot disable slot with active bookings");
+    }
+
     slot.isActive = false;
     await slot.save();
 
