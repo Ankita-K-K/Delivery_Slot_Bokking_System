@@ -88,6 +88,31 @@ const Dashboard = () => {
     setSelectedSlot(slot);
   };
 
+  const groupedSlotsByDate = activeSlots.reduce((groups, slot) => {
+    if (!groups[slot.date]) {
+      groups[slot.date] = [];
+    }
+
+    groups[slot.date].push(slot);
+    return groups;
+  }, {});
+
+  const sortedDateGroups = Object.entries(groupedSlotsByDate)
+    .sort(([dateA], [dateB]) => new Date(dateA) - new Date(dateB))
+    .map(([date, dateSlots]) => ({
+      date,
+      slots: dateSlots.sort((a, b) => {
+        const aAvailable = a.bookedCount < a.capacity;
+        const bAvailable = b.bookedCount < b.capacity;
+
+        if (aAvailable !== bAvailable) {
+          return aAvailable ? -1 : 1;
+        }
+
+        return a.startTime.localeCompare(b.startTime);
+      }),
+    }));
+
   return (
     <section>
       <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -147,10 +172,41 @@ const Dashboard = () => {
         />
       )}
 
-      {!loading && !error && activeSlots.length > 0 && (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {activeSlots.map((slot) => (
-            <SlotCard key={slot._id} slot={slot} onBook={handleBookSlot} />
+      {!loading && !error && (
+        <div className="space-y-8">
+          {sortedDateGroups.map(({ date, slots }) => (
+            <div key={date}>
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-bold text-slate-950">
+                    {new Date(date).toLocaleDateString("en-IN", {
+                      weekday: "long",
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    })}
+                  </h3>
+
+                  <p className="text-sm text-slate-500">
+                    {
+                      slots.filter((slot) => slot.bookedCount < slot.capacity)
+                        .length
+                    }{" "}
+                    available slots
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {slots.map((slot) => (
+                  <SlotCard
+                    key={slot._id}
+                    slot={slot}
+                    onBook={handleBookSlot}
+                  />
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       )}
