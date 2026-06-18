@@ -7,6 +7,7 @@ import {
   disableSlot,
   updateSlot,
   clearSlotError,
+  generateBulkSlots,
 } from "../features/slots/slotSlice";
 
 import ShimmerCard from "../components/ShimmerCard";
@@ -19,6 +20,13 @@ const CreateSlot = () => {
     (state) => state.slots,
   );
 
+  const [bulkFormData, setBulkFormData] = useState({
+    date: "",
+    startTime: "",
+    numberOfSlots: 5,
+    slotDurationMinutes: 60,
+    capacity: 5,
+  });
   const [validationError, setValidationError] = useState("");
 
   const [formData, setFormData] = useState({
@@ -42,6 +50,37 @@ const CreateSlot = () => {
   useEffect(() => {
     dispatch(fetchSlots());
   }, [dispatch]);
+
+  const handleBulkChange = (e) => {
+    setBulkFormData((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
+  };
+
+  const handleGenerateBulkSlots = async (e) => {
+    e.preventDefault();
+
+    const result = await dispatch(
+      generateBulkSlots({
+        ...bulkFormData,
+        numberOfSlots: Number(bulkFormData.numberOfSlots),
+        slotDurationMinutes: Number(bulkFormData.slotDurationMinutes),
+        capacity: Number(bulkFormData.capacity),
+      }),
+    );
+
+    if (generateBulkSlots.fulfilled.match(result)) {
+      toast.success(
+        `${result.payload.createdCount} slots created, ${result.payload.skippedCount} skipped`,
+      );
+      dispatch(fetchSlots());
+    }
+
+    if (generateBulkSlots.rejected.match(result)) {
+      toast.error(result.payload || "Failed to generate slots");
+    }
+  };
 
   const handleChange = (e) => {
     setFormData((prev) => ({
@@ -338,6 +377,106 @@ const CreateSlot = () => {
           {validationError}
         </div>
       )}
+
+      <form
+        onSubmit={handleGenerateBulkSlots}
+        className="mb-6 rounded-3xl border border-blue-200 bg-blue-50 p-6 shadow-sm"
+      >
+        <h3 className="text-xl font-bold text-slate-950">
+          Auto Generate Slots
+        </h3>
+
+        <p className="mt-1 text-sm text-slate-600">
+          Generate multiple delivery slots automatically with default capacity.
+        </p>
+
+        <div className="mt-5 grid gap-4 md:grid-cols-5">
+          <div>
+            <label className="text-sm font-medium text-slate-700">Date</label>
+            <input
+              type="date"
+              name="date"
+              min={new Date().toISOString().split("T")[0]}
+              value={bulkFormData.date}
+              onChange={handleBulkChange}
+              required
+              className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-slate-700">
+              Start Time
+            </label>
+            <input
+              type="time"
+              name="startTime"
+              step="1800"
+              value={bulkFormData.startTime}
+              onChange={handleBulkChange}
+              required
+              className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-slate-700">
+              Number of Slots
+            </label>
+            <input
+              type="number"
+              name="numberOfSlots"
+              min="1"
+              max="24"
+              value={bulkFormData.numberOfSlots}
+              onChange={handleBulkChange}
+              required
+              className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-slate-700">
+              Duration / Slot
+            </label>
+            <input
+              type="number"
+              name="slotDurationMinutes"
+              min="30"
+              max="180"
+              step="30"
+              value={bulkFormData.slotDurationMinutes}
+              onChange={handleBulkChange}
+              required
+              className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-slate-700">
+              Capacity / Slot
+            </label>
+            <input
+              type="number"
+              name="capacity"
+              min="1"
+              max="100"
+              value={bulkFormData.capacity}
+              onChange={handleBulkChange}
+              required
+              className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+            />
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          disabled={actionLoading}
+          className="mt-6 rounded-xl bg-blue-600 px-6 py-3 font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-60"
+        >
+          {actionLoading ? "Generating..." : "Auto Generate Slots"}
+        </button>
+      </form>
 
       <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
         <form

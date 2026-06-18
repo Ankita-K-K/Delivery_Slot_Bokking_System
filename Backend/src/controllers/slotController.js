@@ -147,6 +147,116 @@ export const getAvailableSlots = async (req, res, next) => {
   }
 };
 
+export const generateBulkSlots = async (req, res, next) => {
+  try {
+    const {
+      date,
+      startTime,
+      numberOfSlots,
+      slotDurationMinutes = 60,
+      capacity = 5,
+    } = req.body;
+
+    if (!date || !startTime || !numberOfSlots) {
+      res.status(400);
+      throw new Error("date, startTime and numberOfSlots are required");
+    }
+
+    const totalSlots = Number(numberOfSlots);
+    const duration = Number(slotDurationMinutes);
+    const slotCapacity = Number(capacity);
+
+    if (totalSlots < 1 || totalSlots > 24) {
+      res.status(400);
+      throw new Error("Number of slots must be between 1 and 24");
+    }
+
+    if (duration < 30 || duration > 180) {
+      res.status(400);
+      throw new Error("Slot duration must be between 30 and 180 minutes");
+    }
+
+    if (slotCapacity < 1 || slotCapacity > 100) {
+      res.status(400);
+      throw new Error("Capacity must be between 1 and 100");
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const slotDate = new Date(date);
+    slotDate.setHours(0, 0, 0, 0);
+
+    if (slotDate < today) {
+      res.status(400);
+      throw new Error("Cannot generate slots for a past date");
+    }
+
+    const formatTime = (dateObj) => {
+      return dateObj.toTimeString().slice(0, 5);
+    };
+
+    const createdSlots = [];
+    const skippedSlots = [];
+
+    const [startHour, startMinute] = startTime.split(":").map(Number);
+
+    for (let i = 0; i < totalSlots; i++) {
+      const startDateTime = new Date(date);
+      startDateTime.setHours(startHour, startMinute + i * duration, 0, 0);
+
+      const endDateTime = new Date(startDateTime);
+      endDateTime.setMinutes(endDateTime.getMinutes() + duration);
+
+      if (startDateTime <= new Date()) {
+        skippedSlots.push({
+          startTime: formatTime(startDateTime),
+          endTime: formatTime(endDateTime),
+          reason: "Past time",
+        });
+        continue;
+      }
+
+      const generatedStartTime = formatTime(startDateTime);
+      const generatedEndTime = formatTime(endDateTime);
+
+      const overlappingSlot = await Slot.findOne({
+        date,
+        isActive: true,
+        startTime: { $lt: generatedEndTime },
+        endTime: { $gt: generatedStartTime },
+      });
+
+      if (overlappingSlot) {
+        skippedSlots.push({
+          startTime: generatedStartTime,
+          endTime: generatedEndTime,
+          reason: "Overlapping slot exists",
+        });
+        continue;
+      }
+
+      const slot = await Slot.create({
+        date,
+        startTime: generatedStartTime,
+        endTime: generatedEndTime,
+        capacity: slotCapacity,
+      });
+
+      createdSlots.push(slot);
+    }
+
+    return sendSuccess(res, 201, "Bulk slots generated successfully", {
+      createdCount: createdSlots.length,
+      skippedCount: skippedSlots.length,
+      createdSlots,
+      skippedSlots,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getSlotById = async (req, res, next) => {
   try {
     const slot = await Slot.findById(req.params.slotId);

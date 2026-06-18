@@ -1,6 +1,5 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import api from "../../services/api";
-
 export const fetchSlots = createAsyncThunk(
   "slots/fetchSlots",
   async (_, thunkAPI) => {
@@ -10,6 +9,20 @@ export const fetchSlots = createAsyncThunk(
     } catch (error) {
       return thunkAPI.rejectWithValue(
         error.response?.data?.message || "Failed to fetch slots",
+      );
+    }
+  },
+);
+
+export const generateBulkSlots = createAsyncThunk(
+  "slots/generateBulkSlots",
+  async (bulkData, thunkAPI) => {
+    try {
+      const response = await api.post("/slots/bulk-generate", bulkData);
+      return response.data.data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || "Failed to generate slots",
       );
     }
   },
@@ -100,7 +113,17 @@ const slotSlice = createSlice({
         state.actionLoading = false;
         state.error = action.payload;
       })
-
+      .addCase(generateBulkSlots.pending, (state) => {
+        state.actionLoading = true;
+        state.error = null;
+      })
+      .addCase(generateBulkSlots.fulfilled, (state) => {
+        state.actionLoading = false;
+      })
+      .addCase(generateBulkSlots.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error = action.payload;
+      })
       .addCase(updateSlot.pending, (state) => {
         state.actionLoading = true;
         state.error = null;
