@@ -1,5 +1,5 @@
 import { useState } from "react";
-
+import { useEffect } from "react";
 const BookingForm = ({
   slot,
   onClose,
@@ -8,6 +8,9 @@ const BookingForm = ({
   error,
   suggestedSlot,
   onUseSuggestedSlot,
+  smartRecommendation,
+  recommendationLoading,
+  onAddressChangeForRecommendation,
 }) => {
   const [formData, setFormData] = useState({
     customerName: "",
@@ -16,12 +19,17 @@ const BookingForm = ({
   });
 
   const handleChange = (e) => {
+    const { name, value } = e.target;
+
     setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value,
+      [name]: value,
     }));
-  };
 
+    if (name === "address") {
+      onAddressChangeForRecommendation(value);
+    }
+  };
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -125,6 +133,51 @@ const BookingForm = ({
               className="mt-2 w-full resize-none rounded-xl border border-slate-200 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
             />
           </div>
+          {recommendationLoading && (
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+              Checking nearby grouped delivery slots...
+            </div>
+          )}
+
+          {smartRecommendation && (
+            <div className="rounded-2xl border border-green-200 bg-green-50 p-4">
+              <p className="text-sm font-bold text-green-700">
+                🌱 {smartRecommendation.tag}
+              </p>
+
+              <p className="mt-2 font-semibold text-slate-900">
+                {smartRecommendation.slot.date} |{" "}
+                {smartRecommendation.slot.startTime} -{" "}
+                {smartRecommendation.slot.endTime}
+              </p>
+
+              <p className="mt-2 text-sm text-slate-600">
+                {smartRecommendation.reason}
+              </p>
+
+              <div className="mt-3 flex flex-wrap gap-2 text-sm">
+                <span className="rounded-full bg-white px-3 py-1 font-medium text-green-700">
+                  {smartRecommendation.discount}% discount
+                </span>
+
+                <span className="rounded-full bg-white px-3 py-1 font-medium text-blue-700">
+                  +{smartRecommendation.ecoPoints} eco points
+                </span>
+
+                <span className="rounded-full bg-white px-3 py-1 font-medium text-slate-700">
+                  {smartRecommendation.matchScore}% match
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => onUseSuggestedSlot(smartRecommendation.slot)}
+                className="mt-4 w-full rounded-xl bg-green-600 px-4 py-3 font-medium text-white hover:bg-green-700"
+              >
+                Book Eco Recommended Slot
+              </button>
+            </div>
+          )}
 
           <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
             <button

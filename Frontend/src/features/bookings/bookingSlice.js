@@ -44,6 +44,23 @@ export const cancelBooking = createAsyncThunk(
   },
 );
 
+export const getSmartRecommendation = createAsyncThunk(
+  "bookings/getSmartRecommendation",
+  async (address, thunkAPI) => {
+    try {
+      const response = await api.post("/bookings/recommend", {
+        address,
+      });
+
+      return response.data.data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || "Failed to fetch smart recommendation",
+      );
+    }
+  },
+);
+
 const bookingSlice = createSlice({
   name: "bookings",
 
@@ -53,12 +70,17 @@ const bookingSlice = createSlice({
     actionLoading: false,
     error: null,
     suggestedSlot: null,
+    smartRecommendation: null,
+    recommendationLoading: false,
   },
 
   reducers: {
     clearBookingError: (state) => {
       state.error = null;
       state.suggestedSlot = null;
+    },
+    clearSmartRecommendation: (state) => {
+      state.smartRecommendation = null;
     },
   },
 
@@ -110,10 +132,21 @@ const bookingSlice = createSlice({
       .addCase(cancelBooking.rejected, (state, action) => {
         state.actionLoading = false;
         state.error = action.payload;
+      })
+      .addCase(getSmartRecommendation.pending, (state) => {
+        state.recommendationLoading = true;
+      })
+      .addCase(getSmartRecommendation.fulfilled, (state, action) => {
+        state.recommendationLoading = false;
+        state.smartRecommendation = action.payload;
+      })
+      .addCase(getSmartRecommendation.rejected, (state) => {
+        state.recommendationLoading = false;
+        state.smartRecommendation = null;
       });
   },
 });
 
-export const { clearBookingError } = bookingSlice.actions;
-
+export const { clearBookingError, clearSmartRecommendation } =
+  bookingSlice.actions;
 export default bookingSlice.reducer;

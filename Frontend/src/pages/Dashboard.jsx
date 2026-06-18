@@ -5,6 +5,8 @@ import { fetchSlots } from "../features/slots/slotSlice";
 import {
   createBooking,
   clearBookingError,
+  getSmartRecommendation,
+  clearSmartRecommendation,
 } from "../features/bookings/bookingSlice";
 
 import SlotCard from "../components/SlotCard";
@@ -14,6 +16,7 @@ import BookingForm from "../components/BookingForm";
 
 const Dashboard = () => {
   const dispatch = useDispatch();
+  const [addressForRecommendation, setAddressForRecommendation] = useState("");
 
   const { slots, loading, error } = useSelector((state) => state.slots);
 
@@ -21,6 +24,8 @@ const Dashboard = () => {
     actionLoading,
     error: bookingError,
     suggestedSlot,
+    smartRecommendation,
+    recommendationLoading,
   } = useSelector((state) => state.bookings);
 
   const [selectedSlot, setSelectedSlot] = useState(null);
@@ -29,6 +34,21 @@ const Dashboard = () => {
   useEffect(() => {
     dispatch(fetchSlots());
   }, [dispatch]);
+
+  useEffect(() => {
+    const cleanAddress = addressForRecommendation.trim();
+
+    if (cleanAddress.length < 8) {
+      dispatch(clearSmartRecommendation());
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      dispatch(getSmartRecommendation(cleanAddress));
+    }, 800);
+
+    return () => clearTimeout(timer);
+  }, [addressForRecommendation, dispatch]);
 
   const activeSlots = slots.filter((slot) => slot.isActive);
 
@@ -44,7 +64,9 @@ const Dashboard = () => {
 
   const handleCloseModal = () => {
     setSelectedSlot(null);
+    setAddressForRecommendation("");
     dispatch(clearBookingError());
+    dispatch(clearSmartRecommendation());
   };
 
   const handleSubmitBooking = async (bookingData) => {
@@ -62,6 +84,7 @@ const Dashboard = () => {
 
   const handleUseSuggestedSlot = (slot) => {
     dispatch(clearBookingError());
+    dispatch(clearSmartRecommendation());
     setSelectedSlot(slot);
   };
 
@@ -141,6 +164,9 @@ const Dashboard = () => {
           error={bookingError}
           suggestedSlot={suggestedSlot}
           onUseSuggestedSlot={handleUseSuggestedSlot}
+          smartRecommendation={smartRecommendation}
+          recommendationLoading={recommendationLoading}
+          onAddressChangeForRecommendation={setAddressForRecommendation}
         />
       )}
     </section>

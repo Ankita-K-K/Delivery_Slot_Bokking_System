@@ -5,12 +5,34 @@ import {
   getBookingById,
   cancelBooking,
 } from "../services/bookingService.js";
-
+import { getSmartSlotRecommendation } from "../services/recommendationService.js";
 export const bookSlot = async (req, res, next) => {
   try {
     const booking = await createBooking(req.body);
 
     return sendSuccess(res, 201, "Slot booked successfully", booking);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const recommendSlot = async (req, res, next) => {
+  try {
+    const { address } = req.body;
+
+    if (!address || address.trim().length < 8) {
+      res.status(400);
+      throw new Error("Address must be at least 8 characters");
+    }
+
+    const recommendation = await getSmartSlotRecommendation(address);
+
+    return sendSuccess(
+      res,
+      200,
+      "Smart recommendation fetched successfully",
+      recommendation,
+    );
   } catch (error) {
     next(error);
   }
