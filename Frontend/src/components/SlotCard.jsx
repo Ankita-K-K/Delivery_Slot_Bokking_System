@@ -1,55 +1,88 @@
+const isSlotExpired = (slot) => {
+  const slotEndDateTime = new Date(`${slot.date}T${slot.endTime}:00`);
+  return slotEndDateTime < new Date();
+};
+
 const SlotCard = ({ slot, onBook }) => {
   const availableCount = slot.capacity - slot.bookedCount;
-  const isAvailable = slot.isActive && availableCount > 0;
+  const expired = isSlotExpired(slot);
+
+  const isAvailable = slot.isActive && availableCount > 0 && !expired;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition">
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition hover:shadow-md">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm text-gray-500">{slot.date}</p>
-          <h3 className="text-xl font-bold text-gray-900 mt-1">
+          <p className="text-sm text-gray-500">
+            {new Date(slot.date).toLocaleDateString("en-IN", {
+              weekday: "short",
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            })}
+          </p>
+
+          <h3 className="mt-1 text-xl font-bold text-gray-900">
             {slot.startTime} - {slot.endTime}
           </h3>
         </div>
 
         <span
-          className={`px-3 py-1 rounded-full text-xs font-semibold ${
-            isAvailable
-              ? "bg-green-100 text-green-700"
-              : "bg-red-100 text-red-700"
+          className={`rounded-full px-3 py-1 text-xs font-semibold ${
+            expired
+              ? "bg-red-100 text-red-700"
+              : isAvailable
+                ? "bg-green-100 text-green-700"
+                : "bg-amber-100 text-amber-700"
           }`}
         >
-          {isAvailable ? "Available" : "Full"}
+          {expired ? "Expired" : isAvailable ? "Available" : "Full"}
         </span>
       </div>
 
       <div className="mt-5">
-        <div className="flex justify-between text-sm text-gray-600 mb-2">
+        <div className="mb-2 flex justify-between text-sm text-gray-600">
           <span>Availability</span>
           <span>
-            {availableCount} / {slot.capacity} left
+            {Math.max(availableCount, 0)} / {slot.capacity} left
           </span>
         </div>
 
-        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+        <div className="h-2 overflow-hidden rounded-full bg-gray-100">
           <div
-            className="h-full bg-blue-600 rounded-full"
+            className={`h-full rounded-full ${
+              expired
+                ? "bg-gray-300"
+                : isAvailable
+                  ? "bg-blue-600"
+                  : "bg-amber-500"
+            }`}
             style={{
-              width: `${(slot.bookedCount / slot.capacity) * 100}%`,
+              width: `${Math.min(
+                (slot.bookedCount / slot.capacity) * 100,
+                100,
+              )}%`,
             }}
           ></div>
         </div>
       </div>
 
       <button
+        disabled={expired}
         onClick={() => onBook(slot)}
         className={`mt-6 w-full rounded-lg py-2.5 font-medium transition ${
-          isAvailable
-            ? "bg-blue-600 text-white hover:bg-blue-700"
-            : "bg-slate-900 text-white hover:bg-slate-800"
+          expired
+            ? "cursor-not-allowed bg-gray-300 text-gray-500"
+            : isAvailable
+              ? "bg-blue-600 text-white hover:bg-blue-700"
+              : "bg-slate-900 text-white hover:bg-slate-800"
         }`}
       >
-        {isAvailable ? "Book Slot" : "Find Next Available Slot"}
+        {expired
+          ? "Slot Expired"
+          : isAvailable
+            ? "Book Slot"
+            : "Find Next Available Slot"}
       </button>
     </div>
   );

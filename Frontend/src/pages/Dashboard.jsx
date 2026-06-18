@@ -17,7 +17,11 @@ import BookingForm from "../components/BookingForm";
 const Dashboard = () => {
   const dispatch = useDispatch();
   const [addressForRecommendation, setAddressForRecommendation] = useState("");
+  const isSlotExpired = (slot) => {
+    const slotEndDateTime = new Date(`${slot.date}T${slot.endTime}:00`);
 
+    return slotEndDateTime < new Date();
+  };
   const { slots, loading, error } = useSelector((state) => state.slots);
 
   const {
@@ -50,8 +54,9 @@ const Dashboard = () => {
     return () => clearTimeout(timer);
   }, [addressForRecommendation, dispatch]);
 
-  const activeSlots = slots.filter((slot) => slot.isActive);
-
+  const activeSlots = slots.filter(
+    (slot) => slot.isActive && !isSlotExpired(slot),
+  );
   const availableSlots = activeSlots.filter(
     (slot) => slot.bookedCount < slot.capacity,
   );

@@ -124,12 +124,24 @@ export const getAllSlots = async (req, res, next) => {
 
 export const getAvailableSlots = async (req, res, next) => {
   try {
+    const now = new Date();
+
     const slots = await Slot.find({
       isActive: true,
       $expr: { $lt: ["$bookedCount", "$capacity"] },
     }).sort({ date: 1, startTime: 1 });
 
-    return sendSuccess(res, 200, "Available slots fetched successfully", slots);
+    const availableSlots = slots.filter((slot) => {
+      const slotEndDateTime = new Date(`${slot.date}T${slot.endTime}:00`);
+      return slotEndDateTime > now;
+    });
+
+    return sendSuccess(
+      res,
+      200,
+      "Available slots fetched successfully",
+      availableSlots,
+    );
   } catch (error) {
     next(error);
   }

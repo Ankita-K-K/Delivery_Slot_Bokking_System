@@ -65,7 +65,12 @@ const AdminDashboard = () => {
         )[0];
 
   const now = new Date();
+  const isSlotExpired = (slot) => {
+    const slotEndDateTime = new Date(`${slot.date}T${slot.endTime}:00`);
+    return slotEndDateTime < new Date();
+  };
 
+  const expiredSlots = slots.filter((slot) => isSlotExpired(slot));
   const nextAvailableSlot =
     activeSlots
       .filter((slot) => {
@@ -87,6 +92,12 @@ const AdminDashboard = () => {
       value: slots.length,
       icon: "📅",
       color: "bg-slate-50 border-slate-200",
+    },
+    {
+      label: "Expired Slots",
+      value: expiredSlots.length,
+      icon: "⏰",
+      color: "bg-red-50 border-red-200",
     },
     {
       label: "Available Slots",

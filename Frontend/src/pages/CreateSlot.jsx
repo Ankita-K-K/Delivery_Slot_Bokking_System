@@ -159,9 +159,19 @@ const CreateSlot = () => {
     }));
   };
 
+  const isSlotExpired = (slot) => {
+    const slotEndDateTime = new Date(`${slot.date}T${slot.endTime}:00`);
+    return slotEndDateTime < new Date();
+  };
+
   const openEditModal = (slot) => {
     if (!slot.isActive) {
       toast.error("Disabled slots cannot be edited");
+      return;
+    }
+
+    if (isSlotExpired(slot)) {
+      toast.error("Expired slots cannot be edited");
       return;
     }
 
@@ -449,12 +459,18 @@ const CreateSlot = () => {
                       <div>
                         <span
                           className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
-                            slot.isActive
-                              ? "bg-green-100 text-green-700"
-                              : "bg-slate-100 text-slate-600"
+                            isSlotExpired(slot)
+                              ? "bg-red-100 text-red-700"
+                              : slot.isActive
+                                ? "bg-green-100 text-green-700"
+                                : "bg-slate-100 text-slate-600"
                           }`}
                         >
-                          {slot.isActive ? "Active" : "Disabled"}
+                          {isSlotExpired(slot)
+                            ? "Expired"
+                            : slot.isActive
+                              ? "Active"
+                              : "Disabled"}
                         </span>
 
                         <h4 className="mt-3 text-lg font-bold text-slate-950">
@@ -470,14 +486,14 @@ const CreateSlot = () => {
                       <div className="flex flex-col gap-3 sm:flex-row">
                         <button
                           onClick={() => openEditModal(slot)}
-                          disabled={!slot.isActive}
+                          disabled={!slot.isActive || isSlotExpired(slot)}
                           className={`rounded-xl px-5 py-3 text-sm font-semibold transition ${
-                            slot.isActive
+                            slot.isActive && !isSlotExpired(slot)
                               ? "border border-slate-200 text-slate-700 hover:bg-slate-50"
                               : "bg-slate-200 text-slate-500 cursor-not-allowed"
                           }`}
                         >
-                          Edit Slot
+                          {isSlotExpired(slot) ? "Expired" : "Edit Slot"}
                         </button>
 
                         <button
