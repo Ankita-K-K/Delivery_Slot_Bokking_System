@@ -1,8 +1,46 @@
-# Delivery Slot Booking System
+# SmartSlot – Capacity-Aware Delivery Scheduling Platform
 
 ## Overview
 
-A full-stack delivery slot booking application built using the MERN stack. The system allows administrators to create delivery slots with fixed capacities and enables users to book available slots. The application prevents overbooking, suggests the next available slot when a selected slot is full, and displays real-time slot availability.
+SmartSlot is a full-stack delivery slot management platform that enables customers to book delivery slots while allowing administrators to efficiently manage delivery capacity, scheduling, and booking operations.
+
+The system prevents overbooking through capacity-aware slot management and provides operational insights for administrators.
+
+---
+
+## Features
+
+### Customer Features
+
+- View available delivery slots
+- Book delivery slots
+- View active bookings
+- Cancel bookings (up to 3 hours before slot start time)
+- View booking history (expired and cancelled bookings)
+- Automatic recommendation of next available slot when a slot is full
+
+### Admin Features
+
+- Create delivery slots
+- Bulk slot generation
+- Edit slot details
+- Disable slots
+- Reactivate disabled slots
+- View booking statistics
+- View operational insights
+- Manage customer bookings
+- Capacity utilization monitoring
+
+### Business Rules
+
+- Overbooking prevention using atomic MongoDB updates
+- Capacity cannot be reduced below existing bookings
+- Slot overlap prevention
+- Expired slots cannot be booked
+- Expired slots cannot be edited
+- Slots are soft-deleted and can be reactivated
+- Cancellation blocked within 3 hours of slot start time
+- Booking cancellation releases slot capacity
 
 ---
 
@@ -11,83 +49,95 @@ A full-stack delivery slot booking application built using the MERN stack. The s
 ### Frontend
 
 - React.js
-- Tailwind CSS
 - Redux Toolkit
+- React Router DOM
 - Axios
+- Tailwind CSS
+- React Hot Toast
 
 ### Backend
 
 - Node.js
 - Express.js
-- MongoDB Atlas
+
+### Database
+
+- MongoDB
 - Mongoose
 
----
+### Development Tools
 
-## Features
-
-- Create delivery slots with configurable capacity
-- View all delivery slots
-- Display available slots
-- Book delivery slots
-- Prevent overbooking using atomic database updates
-- Suggest the next available slot when a slot is full
-- Cancel bookings
-- Soft delete and reactivate slots
-- Consistent API responses and centralized error handling
+- Git
+- GitHub
+- Vite
 
 ---
 
 ## Project Structure
 
 ```text
-Delivery_Slot_Booking_System/
-│
-├── Backend/
-│   ├── src/
-│   │   ├── config/
-│   │   ├── controllers/
-│   │   ├── services/
-│   │   ├── models/
-│   │   ├── routes/
-│   │   ├── middlewares/
-│   │   └── utils/
-│   │
-│   ├── package.json
-│   └── .env.example
-│
-├── Frontend/
-│
-└── README.md
+Frontend/
+├── src/
+│   ├── components/
+│   ├── features/
+│   ├── pages/
+│   ├── layouts/
+│   ├── services/
+│   └── App.jsx
+
+Backend/
+├── src/
+│   ├── controllers/
+│   ├── models/
+│   ├── routes/
+│   ├── middleware/
+│   ├── utils/
+│   └── server.js
 ```
 
 ---
 
 ## Setup Instructions
 
+### Prerequisites
+
+- Node.js (v18 or above)
+- MongoDB
+- npm
+
+---
+
 ### Clone Repository
 
 ```bash
 git clone <repository-url>
-cd Delivery_Slot_Booking_System
+cd SmartSlot
 ```
 
-### Backend Setup
+---
+
+## Backend Setup
+
+Navigate to backend directory:
 
 ```bash
 cd Backend
+```
 
+Install dependencies:
+
+```bash
 npm install
 ```
 
-Create `.env` file:
+Create a `.env` file:
 
 ```env
 PORT=5000
-MONGO_URI=your_mongodb_connection_string
+MONGODB_URI=<your_mongodb_connection_string>
 ```
 
-Run server:
+Start backend server:
 
 ```bash
 npm run dev
@@ -101,173 +151,105 @@ http://localhost:5000
 
 ---
 
+## Frontend Setup
+
+Navigate to frontend directory:
+
+```bash
+cd Frontend
+```
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Create `.env` file:
+
+```env
+VITE_API_URL=http://localhost:5000/api
+```
+
+Start frontend:
+
+```bash
+npm run dev
+```
+
+Frontend runs on:
+
+```text
+http://localhost:5173
+```
+
+---
+
 ## API Endpoints
 
-### Slot APIs
-
-#### Create Slot
+### Slots
 
 ```http
-POST /api/slots
-```
-
-Request:
-
-```json
-{
-  "date": "2026-06-20",
-  "startTime": "10:00",
-  "endTime": "11:00",
-  "capacity": 5
-}
-```
-
----
-
-#### Get All Slots
-
-```http
-GET /api/slots
-```
-
----
-
-#### Get Available Slots
-
-```http
-GET /api/slots/available
-```
-
----
-
-#### Get Slot By ID
-
-```http
-GET /api/slots/:slotId
-```
-
----
-
-#### Update Slot
-
-```http
-PATCH /api/slots/:slotId
-```
-
----
-
-#### Disable Slot
-
-```http
+GET    /api/slots
+GET    /api/slots/available
+POST   /api/slots
+POST   /api/slots/bulk-generate
+PATCH  /api/slots/:slotId
 DELETE /api/slots/:slotId
 ```
 
----
-
-### Booking APIs
-
-#### Create Booking
+### Bookings
 
 ```http
-POST /api/bookings
-```
-
-Request:
-
-```json
-{
-  "customerName": "Ankita",
-  "phone": "9876543210",
-  "address": "Bangalore",
-  "slotId": "slot_id"
-}
+GET    /api/bookings
+POST   /api/bookings
+PATCH  /api/bookings/:bookingId/cancel
 ```
 
 ---
 
-#### Get All Bookings
+## Assumptions Made During Development
 
-```http
-GET /api/bookings
-```
+### Slot Management
 
----
+- Delivery slots are managed in fixed time windows.
+- A slot's capacity represents the maximum number of bookings allowed.
+- Multiple bookings may exist within a slot until capacity is reached.
+- Slot duration must be at least 30 minutes.
 
-#### Get Booking By ID
+### Booking Management
 
-```http
-GET /api/bookings/:bookingId
-```
+- Each booking belongs to exactly one delivery slot.
+- Customers can only cancel bookings up to 3 hours before slot start time.
+- Expired slots cannot receive new bookings.
+- Cancelled bookings release occupied capacity.
 
----
+### Admin Operations
 
-#### Cancel Booking
+- Slots are soft-deleted instead of permanently removed.
+- Disabled slots remain available for historical tracking.
+- Reactivated slots reuse existing slot records.
+- Expired slots cannot be modified.
 
-```http
-PATCH /api/bookings/:bookingId/cancel
-```
+### Capacity Planning
 
----
-
-## Assumptions
-
-- Authentication and authorization are out of scope for this assignment.
-- Delivery slots are created by administrators.
-- Users can only book existing active slots.
-- A cancelled booking releases slot capacity.
-- Soft-deleted slots can be reactivated.
-- Capacity cannot become negative.
-- Slot capacity cannot be reduced below the current booked count.
+- Default bulk-generated slots use a capacity of 5.
+- Capacity cannot be reduced below the number of existing bookings.
+- Overlapping active slots are not allowed.
 
 ---
 
-## Overbooking Prevention
+## Future Enhancements
 
-The system prevents overbooking using MongoDB atomic updates:
-
-```js
-await Slot.findOneAndUpdate(
-  {
-    _id: slotId,
-    isActive: true,
-    $expr: {
-      $lt: ["$bookedCount", "$capacity"],
-    },
-  },
-  {
-    $inc: {
-      bookedCount: 1,
-    },
-  },
-);
-```
-
-This ensures concurrent requests cannot exceed slot capacity.
+- Waitlist system for full slots
+- Capacity prediction using booking trends
+- Notification service for booking updates
+- Advanced analytics dashboard
 
 ---
 
-## Next Available Slot Suggestion
+## Author
 
-If a selected slot is full, the system automatically searches for the nearest future slot with available capacity and returns it as a recommendation.
+Ankita Kanakagiri
 
----
-
-## AI-Assisted Development
-
-### Tools Used
-
-- ChatGPT
-
-### How AI Helped
-
-AI was used to assist with system design, API planning, validation strategies, MongoDB schema design, error handling patterns, and edge-case identification. All generated code was reviewed, tested, and adapted during implementation.
-
-### Challenges Encountered
-
-- Designing a reliable overbooking prevention mechanism.
-- Handling soft-deleted slot reactivation while maintaining unique slot constraints.
-- Ensuring booking cancellation correctly updates slot availability.
-
-```
-
-```
+SmartSlot – Capacity-Aware Delivery Scheduling Platform
