@@ -1,4 +1,4 @@
-# SmartSlot – Capacity-Aware Delivery Scheduling Platform
+# SmartSlot – Delivery Slot Booking System
 
 ## Overview
 
@@ -252,4 +252,4 @@ PATCH  /api/bookings/:bookingId/cancel
 
 Ankita Kanakagiri
 
-SmartSlot – Capacity-Aware Delivery Scheduling Platform
+SmartSlot – Delivery Slot Booking System
