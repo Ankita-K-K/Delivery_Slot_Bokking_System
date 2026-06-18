@@ -67,6 +67,42 @@ const getKeywords = (address) => {
     .filter((word) => !/^\d+$/.test(word));
 };
 
+const levenshteinDistance = (a = "", b = "") => {
+  const matrix = Array.from({ length: a.length + 1 }, () =>
+    Array(b.length + 1).fill(0),
+  );
+
+  for (let i = 0; i <= a.length; i++) matrix[i][0] = i;
+  for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
+
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1,
+        matrix[i][j - 1] + 1,
+        matrix[i - 1][j - 1] + cost,
+      );
+    }
+  }
+
+  return matrix[a.length][b.length];
+};
+
+const areWordsSimilar = (wordA, wordB) => {
+  if (!wordA || !wordB) return false;
+
+  if (wordA === wordB) return true;
+
+  if (wordA.includes(wordB) || wordB.includes(wordA)) return true;
+
+  const distance = levenshteinDistance(wordA, wordB);
+  const maxLength = Math.max(wordA.length, wordB.length);
+
+  return distance / maxLength <= 0.35;
+};
+
 const calculateAddressScore = (inputAddress, bookedAddress) => {
   const inputNormalized = normalize(inputAddress);
   const bookedNormalized = normalize(bookedAddress);
@@ -82,22 +118,42 @@ const calculateAddressScore = (inputAddress, bookedAddress) => {
 
   let score = 0;
 
+  // Same pincode is strong, but not mandatory
   if (inputPincode && bookedPincode && inputPincode === bookedPincode) {
-    score += 45;
+    score += 25;
   }
 
+  // Same known area is strong
   if (inputArea && bookedArea && inputArea === bookedArea) {
     score += 35;
   }
 
-  const commonWords = inputWords.filter((word) => bookedWords.includes(word));
+  // Fuzzy keyword match
+  let matchedWords = 0;
+
+  for (const inputWord of inputWords) {
+    const matched = bookedWords.some((bookedWord) =>
+      areWordsSimilar(inputWord, bookedWord),
+    );
+
+    if (matched) matchedWords++;
+  }
 
   const keywordScore =
     inputWords.length === 0
       ? 0
-      : Math.round((commonWords.length / inputWords.length) * 20);
+      : Math.round((matchedWords / inputWords.length) * 40);
 
   score += keywordScore;
+
+  // Loose fallback: if full address contains similar area-like word
+  if (score < 40) {
+    const looseMatch = inputWords.some((inputWord) =>
+      bookedWords.some((bookedWord) => areWordsSimilar(inputWord, bookedWord)),
+    );
+
+    if (looseMatch) score += 20;
+  }
 
   return Math.min(score, 100);
 };
@@ -136,7 +192,6 @@ export const getSmartSlotRecommendation = async (address) => {
   }
 
   const now = new Date();
-  const maxTime = new Date(now.getTime() + THRESHOLD_HOURS * 60 * 60 * 1000);
 
   const confirmedBookings = await Booking.find({
     status: "CONFIRMED",
@@ -152,34 +207,24 @@ export const getSmartSlotRecommendation = async (address) => {
 
     if (!slot.isActive) continue;
     if (slot.bookedCount >= slot.capacity) continue;
-    if (slotTime <= now || slotTime > maxTime) continue;
+    if (slotTime <= now) continue;
 
-    const score = calculateAddressScore(address, booking.address);
+    const addressScore = calculateAddressScore(address, booking.address);
 
-    if (score < 50) continue;
+    if (addressScore < 35) continue;
 
-    const timeDifferenceHours =
-      (slotTime.getTime() - now.getTime()) / (1000 * 60 * 60);
-
-    const timeScore = Math.max(
-      0,
-      Math.round(20 - (timeDifferenceHours / THRESHOLD_HOURS) * 20),
-    );
-
-    const finalScore = Math.min(score + timeScore, 100);
-
-    if (!bestRecommendation || finalScore > bestRecommendation.matchScore) {
-      const reward = getReward(finalScore);
+    if (!bestRecommendation || addressScore > bestRecommendation.matchScore) {
+      const reward = getReward(addressScore);
 
       bestRecommendation = {
         slot: slot.toObject(),
-        recommendationType: "ADDRESS_GROUPED_DELIVERY",
-        matchScore: finalScore,
+        recommendationType: "ADDRESS_BASED_RECOMMENDATION",
+        matchScore: addressScore,
         discount: reward.discount,
         ecoPoints: reward.ecoPoints,
         tag: reward.tag,
         reason:
-          "A nearby delivery is already scheduled within the next 48 hours. Choosing this slot helps optimize delivery routing.",
+          "A delivery is already scheduled near this address. Choosing this slot helps group nearby deliveries.",
       };
     }
   }

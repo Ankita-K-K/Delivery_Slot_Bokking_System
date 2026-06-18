@@ -629,10 +629,10 @@ const CreateSlot = () => {
                           className={`rounded-xl px-5 py-3 text-sm font-semibold transition ${
                             slot.isActive && !isSlotExpired(slot)
                               ? "border border-slate-200 text-slate-700 hover:bg-slate-50"
-                              : "bg-slate-200 text-slate-500 cursor-not-allowed"
+                              : ""
                           }`}
                         >
-                          {isSlotExpired(slot) ? "Expired" : "Edit Slot"}
+                          {isSlotExpired(slot) ? "" : "Edit Slot"}
                         </button>
 
                         <button
@@ -640,23 +640,28 @@ const CreateSlot = () => {
                           disabled={
                             !slot.isActive ||
                             slot.bookedCount > 0 ||
+                            isSlotExpired(slot) ||
                             actionLoading
                           }
                           className={`rounded-xl px-5 py-3 text-sm font-semibold transition ${
-                            slot.bookedCount > 0
-                              ? "cursor-not-allowed bg-amber-100 text-amber-700"
-                              : slot.isActive
-                                ? "bg-red-600 text-white hover:bg-red-700"
-                                : "bg-slate-200 text-slate-500"
+                            isSlotExpired(slot)
+                              ? ""
+                              : slot.bookedCount > 0
+                                ? "cursor-not-allowed bg-amber-100 text-amber-700"
+                                : slot.isActive
+                                  ? "bg-red-600 text-white hover:bg-red-700"
+                                  : "bg-slate-200 text-slate-500"
                           }`}
                         >
-                          {slot.bookedCount > 0
-                            ? "Has Bookings"
-                            : slot.isActive
-                              ? "Disable Slot"
-                              : "Disabled"}
+                          {isSlotExpired(slot)
+                            ? ""
+                            : slot.bookedCount > 0
+                              ? "Has Bookings"
+                              : slot.isActive
+                                ? "Disable Slot"
+                                : "Disabled"}
                         </button>
-                        {!slot.isActive && (
+                        {!slot.isActive && !isSlotExpired && (
                           <button
                             onClick={() =>
                               dispatch(

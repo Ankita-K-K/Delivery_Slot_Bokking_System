@@ -247,9 +247,3 @@ PATCH  /api/bookings/:bookingId/cancel
 - Advanced analytics dashboard
 
 ---
-
-## Author
-
-Ankita Kanakagiri
-
-SmartSlot – Delivery Slot Booking System

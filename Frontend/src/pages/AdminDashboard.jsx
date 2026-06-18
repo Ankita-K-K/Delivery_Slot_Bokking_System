@@ -106,7 +106,7 @@ const AdminDashboard = () => {
       color: "bg-green-50 border-green-200",
     },
     {
-      label: "Full Slots",
+      label: "Closed Slots",
       value: fullSlots.length,
       icon: "🔴",
       color: "bg-red-50 border-red-200",
@@ -134,12 +134,6 @@ const AdminDashboard = () => {
       value: disabledSlots.length,
       icon: "⏸️",
       color: "bg-slate-100 border-slate-300",
-    },
-    {
-      label: "Capacity Used",
-      value: `${usagePercent}%`,
-      icon: "⚡",
-      color: "bg-indigo-50 border-indigo-200",
     },
   ];
 
